@@ -117,7 +117,7 @@ type_name_fn(connector_type)
 
 #define bit_name_fn(res)					\
 char * res##_str(int type) {					\
-	int i;							\
+	unsigned int i;							\
 	const char *sep = "";					\
 	for (i = 0; i < ARRAY_SIZE(res##_names); i++) {		\
 		if (type & (1 << i)) {				\
@@ -509,7 +509,7 @@ struct plane {
 static void
 connector_find_mode(struct connector *c)
 {
-	drmModeConnector *connector;
+	drmModeConnector *connector = NULL;
 	int i, j;
 
 	/* First, find the connector & mode */
@@ -547,6 +547,11 @@ connector_find_mode(struct connector *c)
 		drmModeFreeConnector(connector);
 	}
 
+	if(!connector) {
+		fprintf(stderr, "failed to find the connector \"%p\"\n", c);
+		return;
+	}
+
 	if (!c->mode) {
 		fprintf(stderr, "failed to find mode \"%s\"\n", c->mode_str);
 		return;
@@ -574,7 +579,7 @@ connector_find_mode(struct connector *c)
 
 	/* and figure out which crtc index it is: */
 	for (i = 0; i < resources->count_crtcs; i++) {
-		if (c->crtc == resources->crtcs[i]) {
+		if ((uint32_t)c->crtc == resources->crtcs[i]) {
 			c->pipe = i;
 			break;
 		}
@@ -618,7 +623,8 @@ set_plane(struct kms_driver *kms, struct connector *c, struct plane *p)
 {
 	drmModePlaneRes *plane_resources;
 	drmModePlane *ovr;
-	uint32_t handles[4], pitches[4], offsets[4] = {0}; /* we only use [0] */
+	uint32_t handles[4];
+	uint32_t pitches[4], offsets[4] = {0}; /* we only use [0] */
 	uint32_t plane_id = 0;
 	struct kms_bo *plane_bo;
 	uint32_t plane_flags = 0;
@@ -841,6 +847,16 @@ static char optstr[] = "ecpmfs:P:v";
 
 #define min(a, b)	((a) < (b) ? (a) : (b))
 
+static char *
+strchrnul (const char *s, int c_in)
+{
+  char c = c_in;
+  while (*s && (*s != c))
+    s++;
+
+  return (char *) s;
+}
+
 static int parse_connector(struct connector *c, const char *arg)
 {
 	unsigned int len;
@@ -861,7 +877,7 @@ static int parse_connector(struct connector *c, const char *arg)
 	arg = endp + 1;
 
 	p = strchrnul(arg, '@');
-	len = min(sizeof c->mode_str - 1, p - arg);
+	len = min((int)(sizeof c->mode_str - 1), p - arg);
 	strncpy(c->mode_str, arg, len);
 	c->mode_str[len] = '\0';
 
@@ -883,7 +899,7 @@ static int parse_plane(struct plane *p, const char *arg)
 {
 	strcpy(p->format_str, "XR24");
 
-	if (sscanf(arg, "%d:%dx%d@%4s", &p->con_id, &p->w, &p->h, &p->format_str) != 4 &&
+	if (sscanf(arg, "%d:%dx%d@%4s", &p->con_id, &p->w, &p->h, (char *)&p->format_str) != 4 &&
 	    sscanf(arg, "%d:%dx%d", &p->con_id, &p->w, &p->h) != 3)
 		return -1;
 
@@ -943,8 +959,10 @@ int main(int argc, char **argv)
 	unsigned int i;
 	int count = 0, plane_count = 0;
 	struct connector con_args[2];
-	struct plane plane_args[2] = {0};
+	struct plane plane_args[2];
 	
+	memset(plane_args, 0x00, sizeof(plane_args));
+
 	opterr = 0;
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {

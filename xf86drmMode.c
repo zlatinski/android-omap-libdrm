@@ -74,7 +74,7 @@ void* drmAllocCpy(void *array, int count, int entry_size)
 		return 0;
 
 	for (i = 0; i < count; i++)
-		memcpy(r+(entry_size*i), array+(entry_size*i), entry_size);
+		memcpy(r+(entry_size*i), (unsigned char*)array+(entry_size*i), entry_size);
 
 	return r;
 }
@@ -316,7 +316,9 @@ drmModeFBPtr drmModeGetFB(int fd, uint32_t buf)
 int drmModeDirtyFB(int fd, uint32_t bufferId,
 		   drmModeClipPtr clips, uint32_t num_clips)
 {
-	struct drm_mode_fb_dirty_cmd dirty = { 0 };
+	struct drm_mode_fb_dirty_cmd dirty;
+
+	memset(&dirty, 0x00, sizeof(dirty));
 
 	dirty.fb_id = bufferId;
 	dirty.clips_ptr = VOID2U64(clips);
@@ -782,7 +784,7 @@ int drmHandleEvent(int fd, drmEventContextPtr evctx)
 	len = read(fd, buffer, sizeof buffer);
 	if (len == 0)
 		return 0;
-	if (len < sizeof *e)
+	if (len < (int)sizeof *e)
 		return -1;
 
 	i = 0;

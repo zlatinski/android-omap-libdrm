@@ -315,7 +315,7 @@ static int drmOpenDevice(long dev, int minor, int type)
 	drm_server_info->get_perms(&serv_group, &serv_mode);
 	devmode  = serv_mode ? serv_mode : DRM_DEV_MODE;
 	devmode &= ~(S_IXUSR|S_IXGRP|S_IXOTH);
-	group = (serv_group >= 0) ? serv_group : DRM_DEV_GID;
+	group = ((int)serv_group >= 0) ? serv_group : DRM_DEV_GID;
     }
 
 #if !defined(UDEV)
@@ -374,7 +374,7 @@ wait_for_udev:
     /* Check if the device node is not what we expect it to be, and recreate it
      * and try again if so.
      */
-    if (st.st_rdev != dev) {
+    if ((long)st.st_rdev != dev) {
 	if (!isroot)
 	    return DRM_ERR_NOT_ROOT;
 	remove(buf);
@@ -2179,7 +2179,7 @@ int drmGetClient(int fd, int idx, int *auth, int *pid, int *uid,
 int drmGetStats(int fd, drmStatsT *stats)
 {
     drm_stats_t s;
-    int         i;
+    unsigned int         i;
 
     if (drmIoctl(fd, DRM_IOCTL_GET_STATS, &s))
 	return -errno;

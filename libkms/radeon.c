@@ -26,7 +26,9 @@
  **************************************************************************/
 
 
+#ifndef HAVE_STDINT_H
 #define HAVE_STDINT_H
+#endif
 #define _FILE_OFFSET_BITS 64
 
 #include <errno.h>

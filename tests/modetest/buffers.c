@@ -465,14 +465,14 @@ fill_smpte_rgb24(const struct rgb_info *rgb, void *mem,
 		for (x = 0; x < width; ++x)
 			((struct color_rgb24 *)mem)[x] =
 				colors_top[x * 7 / width];
-		mem += stride;
+		mem = (unsigned char*)mem + stride;
 	}
 
 	for (; y < height * 7 / 9; ++y) {
 		for (x = 0; x < width; ++x)
 			((struct color_rgb24 *)mem)[x] =
 				colors_middle[x * 7 / width];
-		mem += stride;
+		mem = (unsigned char*)mem + stride;
 	}
 
 	for (; y < height; ++y) {
@@ -485,7 +485,7 @@ fill_smpte_rgb24(const struct rgb_info *rgb, void *mem,
 					      / (width / 7) + 4];
 		for (; x < width; ++x)
 			((struct color_rgb24 *)mem)[x] = colors_bottom[7];
-		mem += stride;
+		mem = (unsigned char*)mem + stride;
 	}
 }
 
@@ -568,8 +568,8 @@ fill_smpte(const struct format_info *info, void *planes[3], unsigned int width,
 	case DRM_FORMAT_NV21:
 	case DRM_FORMAT_NV16:
 	case DRM_FORMAT_NV61:
-		u = info->yuv.order & YUV_YCbCr ? planes[1] : planes[1] + 1;
-		v = info->yuv.order & YUV_YCrCb ? planes[1] : planes[1] + 1;
+		u = info->yuv.order & YUV_YCbCr ? planes[1] : (unsigned char *)planes[1] + 1;
+		v = info->yuv.order & YUV_YCrCb ? planes[1] : (unsigned char *)planes[1] + 1;
 		return fill_smpte_yuv_planar(&info->yuv, planes[0], u, v,
 					     width, height, stride);
 
@@ -798,8 +798,8 @@ fill_tiles(const struct format_info *info, void *planes[3], unsigned int width,
 	case DRM_FORMAT_NV21:
 	case DRM_FORMAT_NV16:
 	case DRM_FORMAT_NV61:
-		u = info->yuv.order & YUV_YCbCr ? planes[1] : planes[1] + 1;
-		v = info->yuv.order & YUV_YCrCb ? planes[1] : planes[1] + 1;
+		u = info->yuv.order & YUV_YCbCr ? planes[1] : (unsigned char *)planes[1] + 1;
+		v = info->yuv.order & YUV_YCrCb ? planes[1] : (unsigned char *)planes[1] + 1;
 		return fill_tiles_yuv_planar(&info->yuv, planes[0], u, v,
 					     width, height, stride);
 
@@ -883,7 +883,7 @@ fill_pattern(unsigned int format, enum fill_pattern pattern, void *planes[3],
 
 static struct kms_bo *
 allocate_buffer(struct kms_driver *kms,
-		int width, int height, int *stride)
+		int width, int height, uint32_t *stride)
 {
 	struct kms_bo *bo;
 	unsigned bo_attribs[] = {
@@ -917,8 +917,8 @@ allocate_buffer(struct kms_driver *kms,
 
 struct kms_bo *
 create_test_buffer(struct kms_driver *kms, unsigned int format,
-		   int width, int height, int handles[4],
-		   int pitches[4], int offsets[4], enum fill_pattern pattern)
+		   int width, int height, uint32_t handles[4],
+		   uint32_t pitches[4], uint32_t offsets[4], enum fill_pattern pattern)
 {
 	struct kms_bo *bo;
 	int ret, stride;
@@ -964,7 +964,7 @@ create_test_buffer(struct kms_driver *kms, unsigned int format,
 		kms_bo_get_prop(bo, KMS_HANDLE, &handles[1]);
 
 		planes[0] = virtual;
-		planes[1] = virtual + offsets[1];
+		planes[1] = (unsigned char*)virtual + offsets[1];
 		break;
 
 	case DRM_FORMAT_YVU420:
@@ -979,8 +979,8 @@ create_test_buffer(struct kms_driver *kms, unsigned int format,
 		kms_bo_get_prop(bo, KMS_HANDLE, &handles[2]);
 
 		planes[0] = virtual;
-		planes[1] = virtual + offsets[1];
-		planes[2] = virtual + offsets[2];
+		planes[1] = (unsigned char*)virtual + offsets[1];
+		planes[2] = (unsigned char*)virtual + offsets[2];
 		break;
 
 	case DRM_FORMAT_RGB565:

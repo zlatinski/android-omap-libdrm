@@ -133,7 +133,7 @@ void *drmRandomCreate(unsigned long seed)
 				/* Check for illegal boundary conditions,
                                    and choose closest legal value. */
     if (state->seed <= 0)        state->seed = 1;
-    if (state->seed >= state->m) state->seed = state->m - 1;
+    if (state->seed >= (long)state->m) state->seed = state->m - 1;
 
     return state;
 }

@@ -74,4 +74,6 @@ int nouveau_create(int fd, struct kms_driver **out);
 
 int radeon_create(int fd, struct kms_driver **out);
 
+int omap_create(int fd, struct kms_driver **out);
+
 #endif

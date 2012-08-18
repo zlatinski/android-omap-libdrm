@@ -267,6 +267,8 @@ int drmSLLookupNeighbors(void *l, unsigned long key,
     SLEntryPtr    update[SL_MAX_LEVEL + 1];
     int           retcode = 0;
 
+    memset(update, 0x00, sizeof(update));
+
     *prev_key   = *next_key   = key;
     *prev_value = *next_value = NULL;
 	

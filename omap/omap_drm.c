@@ -47,7 +47,10 @@
 
 #define __round_mask(x, y) ((__typeof__(x))((y)-1))
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
+
+#ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
+#endif
 
 static pthread_mutex_t table_lock = PTHREAD_MUTEX_INITIALIZER;
 static void * dev_table;

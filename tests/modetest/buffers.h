@@ -37,8 +37,8 @@ enum fill_pattern {
 };
 
 struct kms_bo *create_test_buffer(struct kms_driver *kms, unsigned int format,
-		   int width, int height, int handles[4], int pitches[4],
-		   int offsets[4], enum fill_pattern pattern);
+		   int width, int height, uint32_t handles[4], uint32_t pitches[4],
+		   uint32_t offsets[4], enum fill_pattern pattern);
 
 unsigned int format_fourcc(const char *name);
 

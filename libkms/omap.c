@@ -41,17 +41,16 @@
 #include <sys/ioctl.h>
 #include "xf86drm.h"
 
-#include "nouveau_drm.h"
+#include "omap_drm.h"
 
-struct nouveau_bo
+struct omap_kms_bo
 {
 	struct kms_bo base;
-	uint64_t map_handle;
 	unsigned map_count;
 };
 
 static int
-nouveau_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
+omap_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
 {
 	switch (key) {
 	case KMS_BO_TYPE:
@@ -64,31 +63,26 @@ nouveau_get_prop(struct kms_driver *kms, unsigned key, unsigned *out)
 }
 
 static int
-nouveau_destroy(struct kms_driver *kms)
-{
-	free(kms);
-	return 0;
-}
-
-static int
-nouveau_bo_create(struct kms_driver *kms,
+omap_bo_create(struct kms_driver *kms,
 		 const unsigned width, const unsigned height,
 		 const enum kms_bo_type type, const unsigned *attr,
 		 struct kms_bo **out)
 {
-	struct drm_nouveau_gem_new arg;
-	unsigned size, pitch;
-	struct nouveau_bo *bo;
+	unsigned size = 0, pitch = 0;
+	struct omap_kms_bo *bo = NULL;
+	struct drm_omap_gem_new arg;
 	int i, ret;
 
 	for (i = 0; attr[i]; i += 2) {
 		switch (attr[i]) {
-		case KMS_WIDTH:
-		case KMS_HEIGHT:
-		case KMS_BO_TYPE:
-			break;
-		default:
-			return -EINVAL;
+			case KMS_BO_TYPE:
+			case KMS_WIDTH:
+			case KMS_HEIGHT:
+			case KMS_PITCH:
+			case KMS_HANDLE:
+				break;
+			default:
+				return -EINVAL;
 		}
 	}
 
@@ -96,34 +90,17 @@ nouveau_bo_create(struct kms_driver *kms,
 	if (!bo)
 		return -ENOMEM;
 
-	if (type == KMS_BO_TYPE_CURSOR_64X64_A8R8G8B8) {
-		pitch = 64 * 4;
-		size = 64 * 64 * 4;
-	} else if (type == KMS_BO_TYPE_SCANOUT_X8R8G8B8) {
-		pitch = width * 4;
-		pitch = (pitch + 512 - 1) & ~(512 - 1);
-		size = pitch * height;
-	} else {
-		return -EINVAL;
-	}
-
 	memset(&arg, 0, sizeof(arg));
-	arg.info.size = size;
-	arg.info.domain = NOUVEAU_GEM_DOMAIN_MAPPABLE | NOUVEAU_GEM_DOMAIN_VRAM;
-	arg.info.tile_mode = 0;
-	arg.info.tile_flags = 0;
-	arg.align = 512;
-	arg.channel_hint = 0;
+	arg.size.bytes = size;
 
-	ret = drmCommandWriteRead(kms->fd, DRM_NOUVEAU_GEM_NEW, &arg, sizeof(arg));
+	ret = drmCommandWriteRead(kms->fd, DRM_OMAP_GEM_NEW, &arg, sizeof(arg));
 	if (ret)
 		goto err_free;
 
 	bo->base.kms = kms;
-	bo->base.handle = arg.info.handle;
+	bo->base.handle = arg.handle;
 	bo->base.size = size;
 	bo->base.pitch = pitch;
-	bo->map_handle = arg.info.map_handle;
 
 	*out = &bo->base;
 
@@ -135,7 +112,7 @@ err_free:
 }
 
 static int
-nouveau_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
+omap_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
 {
 	switch (key) {
 	default:
@@ -144,10 +121,11 @@ nouveau_bo_get_prop(struct kms_bo *bo, unsigned key, unsigned *out)
 }
 
 static int
-nouveau_bo_map(struct kms_bo *_bo, void **out)
+_omap_bo_map(struct kms_bo *_bo, void **out)
 {
-	struct nouveau_bo *bo = (struct nouveau_bo *)_bo;
+	struct omap_kms_bo *bo = (struct omap_kms_bo *)_bo;
 	void *map = NULL;
+	int ret;
 
 	if (bo->base.ptr) {
 		bo->map_count++;
@@ -155,11 +133,9 @@ nouveau_bo_map(struct kms_bo *_bo, void **out)
 		return 0;
 	}
 
-	map = mmap(0, bo->base.size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->base.kms->fd, bo->map_handle);
-	if (map == MAP_FAILED)
-		return -errno;
+	/* TODO: Map buffer */
 
-	bo->base.ptr = map;
+	bo->base.ptr = NULL;
 	bo->map_count++;
 	*out = bo->base.ptr;
 
@@ -167,17 +143,27 @@ nouveau_bo_map(struct kms_bo *_bo, void **out)
 }
 
 static int
-nouveau_bo_unmap(struct kms_bo *_bo)
+omap_bo_unmap(struct kms_bo *_bo)
 {
-	struct nouveau_bo *bo = (struct nouveau_bo *)_bo;
+	struct omap_kms_bo *bo = (struct omap_kms_bo *)_bo;
+
+	if(bo->map_count <= 0)
+		return -1;
+
 	bo->map_count--;
+
+	if(bo->map_count == 0)
+	{
+		/* TODO: UnMap buffer */
+	}
+
 	return 0;
 }
 
 static int
-nouveau_bo_destroy(struct kms_bo *_bo)
+omap_bo_destroy(struct kms_bo *_bo)
 {
-	struct nouveau_bo *bo = (struct nouveau_bo *)_bo;
+	struct omap_kms_bo *bo = (struct omap_kms_bo *)_bo;
 	struct drm_gem_close arg;
 	int ret;
 
@@ -198,8 +184,15 @@ nouveau_bo_destroy(struct kms_bo *_bo)
 	return 0;
 }
 
+static int
+omap_destroy(struct kms_driver *kms)
+{
+	free(kms);
+	return 0;
+}
+
 int
-nouveau_create(int fd, struct kms_driver **out)
+omap_create(int fd, struct kms_driver **out)
 {
 	struct kms_driver *kms;
 
@@ -209,13 +202,13 @@ nouveau_create(int fd, struct kms_driver **out)
 
 	kms->fd = fd;
 
-	kms->bo_create = nouveau_bo_create;
-	kms->bo_map = nouveau_bo_map;
-	kms->bo_unmap = nouveau_bo_unmap;
-	kms->bo_get_prop = nouveau_bo_get_prop;
-	kms->bo_destroy = nouveau_bo_destroy;
-	kms->get_prop = nouveau_get_prop;
-	kms->destroy = nouveau_destroy;
+	kms->bo_create = omap_bo_create;
+	kms->bo_map = _omap_bo_map;
+	kms->bo_unmap = omap_bo_unmap;
+	kms->bo_get_prop = omap_bo_get_prop;
+	kms->bo_destroy = omap_bo_destroy;
+	kms->get_prop = omap_get_prop;
+	kms->destroy = omap_destroy;
 	*out = kms;
 
 	return 0;
