@@ -6,6 +6,9 @@
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 
+# Since this is a directory insight omap, we'll fix the GPU here
+BOARD_GPU_DRIVERS := omapdrm
+
 ifneq ($(strip $(BOARD_GPU_DRIVERS)),)
 
 LOCAL_PATH := $(call my-dir)
