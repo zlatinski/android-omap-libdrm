@@ -98,4 +98,26 @@ LOCAL_SHARED_LIBRARIES :=			\
 
 include $(BUILD_EXECUTABLE)
 
+################ OMAP Test Apps #######################
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES :=				\
+	tests/omap/util/util.c		\
+	tests/omap/util/display-kms.c \
+	tests/omap/fliptest.c
+
+LOCAL_C_INCLUDES +=				\
+	$(LOCAL_PATH)/include/drm		\
+	$(LOCAL_PATH)/omap			\
+	$(LOCAL_PATH)/tests/omap/util	\
+
+LOCAL_MODULE := omapmodetest
+LOCAL_MODULE_TAGS := debug
+
+LOCAL_SHARED_LIBRARIES :=			\
+	libdrm							\
+	libdrm_omap
+
+include $(BUILD_EXECUTABLE)
 endif
