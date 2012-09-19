@@ -70,7 +70,7 @@ LOCAL_C_INCLUDES +=				\
 LOCAL_MODULE := libkms
 LOCAL_MODULE_TAGS := optional
 
-LOCAL_SHARED_LIBRARIES := libdrm
+LOCAL_SHARED_LIBRARIES := libdrm libdrm_omap
 
 include $(BUILD_SHARED_LIBRARY)
 
