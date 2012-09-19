@@ -213,7 +213,8 @@ fill(struct buffer *buf, int n)
 		omap_bo_cpu_prep(buf->bo[i], OMAP_GEM_WRITE);
 
 	switch(buf->fourcc) {
-	case 0: {
+	case 0:
+	case FOURCC('A','R','2','4'): {
 		assert(buf->nbo == 1);
 		fillRGB4(omap_bo_map(buf->bo[0]), n,
 				buf->width, buf->height, buf->pitches[0]);

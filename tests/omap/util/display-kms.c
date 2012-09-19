@@ -302,6 +302,7 @@ post_buffer(struct display *disp, struct buffer *buf)
 
 static int
 post_vid_buffer(struct display *disp, struct buffer *buf,
+		uint32_t root_x, uint32_t root_y, uint32_t root_w, uint32_t root_h,
 		uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 	struct display_kms *disp_kms = to_display_kms(disp);
@@ -343,7 +344,8 @@ post_vid_buffer(struct display *disp, struct buffer *buf,
 		ret = drmModeSetPlane(disp->fd, disp_kms->ovr[i]->plane_id,
 				connector->crtc, buf_kms->fb_id, 0,
 				/* make video fullscreen: */
-				0, 0, mode->hdisplay, mode->vdisplay,
+				/* 0, 0, mode->hdisplay, mode->vdisplay, */
+				root_x, root_y, root_w, root_h,
 				/* source/cropping coordinates are given in Q16 */
 				x << 16, y << 16, w << 16, h << 16);
 		if (ret) {

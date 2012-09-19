@@ -19,6 +19,7 @@
 #include "util/util.h"
 
 #define NBUF 3
+#define NVBUF 3
 #define CNT  500
 
 static void
@@ -35,7 +36,15 @@ main(int argc, char **argv)
 {
 	struct display *disp;
 	struct buffer **buffers;
+	struct buffer **vid_buffers;
+	struct buffer **vid_buffers2;
 	int ret, i;
+	bool video_buff = 1;
+	// uint32_t fourcc = FOURCC('A','R','2','4');
+	uint32_t fourcc = FOURCC('N','V','1','2');
+	// uint32_t fourcc = FOURCC('Y','U','Y','V');
+	uint32_t width = 200, height = 200;
+	uint32_t x = 0, y = 0;
 
 	MSG("Opening Display..");
 	disp = disp_open(argc, argv);
@@ -50,17 +59,66 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-	buffers = disp_get_buffers(disp, NBUF);
-	if (!buffers) {
-		return 1;
+	if(1)
+	{
+		buffers = disp_get_buffers(disp, NBUF);
+		if (!buffers) {
+			return 1;
+		}
+	}
+
+	if(1)
+	{
+		vid_buffers = disp_get_vid_buffers(disp, NVBUF,
+				fourcc, width, height);
+		if (!vid_buffers) {
+			return 1;
+		}
+	}
+
+	if(1)
+	{
+		vid_buffers2 = disp_get_vid_buffers(disp, NVBUF,
+				fourcc, width, height);
+		if (!vid_buffers2) {
+			return 1;
+		}
 	}
 
 	for (i = 0; i < CNT; i++) {
-		struct buffer *buf = buffers[i % NBUF];
-		fill(buf, i * 2);
-		ret = disp_post_buffer(disp, buf);
-		if (ret) {
-			return ret;
+
+		if(1)
+		{
+			struct buffer *buf = buffers[i % NBUF];
+			fill(buf, i * 2);
+			ret = disp_post_buffer(disp, buf);
+			if (ret) {
+				return ret;
+			}
+		}
+
+		if(1)
+		{
+			struct buffer *vbuf = vid_buffers[i % NVBUF];
+			fill(vbuf, i * 2);
+			ret = disp_post_vid_buffer(disp, vbuf,
+					x,y, width, height,
+					x,y, width, height);
+			if (ret) {
+				return ret;
+			}
+		}
+
+		if(1)
+		{
+			struct buffer *vbuf2 = vid_buffers2[i % NVBUF];
+			fill(vbuf2, i * 2);
+			ret = disp_post_vid_buffer(disp, vbuf2,
+					x + 300,y + 300, width, height,
+					x,y, width, height);
+			if (ret) {
+				return ret;
+			}
 		}
 	}
 

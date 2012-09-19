@@ -67,6 +67,7 @@ struct display {
 			uint32_t n, uint32_t fourcc, uint32_t w, uint32_t h);
 	int (*post_buffer)(struct display *disp, struct buffer *buf);
 	int (*post_vid_buffer)(struct display *disp, struct buffer *buf,
+			uint32_t root_x, uint32_t root_y, uint32_t root_w, uint32_t root_h,
 			uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 };
 
@@ -99,9 +100,12 @@ disp_post_buffer(struct display *disp, struct buffer *buf)
 /* flip to / post the specified video buffer */
 static inline int
 disp_post_vid_buffer(struct display *disp, struct buffer *buf,
+		uint32_t root_x, uint32_t root_y, uint32_t root_w, uint32_t root_h,
 		uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-	return disp->post_vid_buffer(disp, buf, x, y, w, h);
+	return disp->post_vid_buffer(disp, buf,
+			root_x, root_y, root_w, root_h,
+			x, y, w, h);
 }
 
 /* allocate a buffer from pool created by disp_get_vid_buffers() */
